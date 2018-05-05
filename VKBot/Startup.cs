@@ -6,18 +6,19 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using System.Runtime.Serialization.Json;
+using System.Runtime.Serialization;
+using System.IO;
+using System.Net;
 
 namespace VKBot
 {
     public class Startup
     {
-        // This method gets called by the runtime. Use this method to add services to the container.
-        // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
             if (env.IsDevelopment())
@@ -25,10 +26,40 @@ namespace VKBot
                 app.UseDeveloperExceptionPage();
             }
 
+            app.Map(Settings.HandlerPath, CallbackHandler);
+
             app.Run(async (context) =>
             {
-                await context.Response.WriteAsync("Hello World!");
+                await context.Response.WriteAsync("Hello, VKBOT!");
             });
+        }
+
+        private void CallbackHandler(IApplicationBuilder app)
+        {
+            app.Run(async context => 
+            {
+                var data = "";
+                using (var reader = new StreamReader(context.Request.Body))
+                {
+                    data = await reader.ReadToEndAsync();
+                }
+                await context.Response.WriteAsync("ok");
+                var uri = $"https://api.vk.com/method/messages.send?user_id=84069595&message={data}&access_token={Settings.ApiKey}&v=5.74";
+                await GetAsync(uri);
+            });
+        }
+
+        public async Task<string> GetAsync(string uri)
+        {
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
+            request.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+
+            using (HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync())
+            using (Stream stream = response.GetResponseStream())
+            using (StreamReader reader = new StreamReader(stream))
+            {
+                return await reader.ReadToEndAsync();
+            }
         }
     }
 }
