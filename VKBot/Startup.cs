@@ -10,6 +10,7 @@ using System.Runtime.Serialization.Json;
 using System.Runtime.Serialization;
 using System.IO;
 using System.Net;
+using Newtonsoft.Json;
 
 namespace VKBot
 {
@@ -38,12 +39,25 @@ namespace VKBot
         {
             app.Run(async context => 
             {
-                var data = "";
+                string data;
                 using (var reader = new StreamReader(context.Request.Body))
                 {
                     data = await reader.ReadToEndAsync();
                 }
-                await context.Response.WriteAsync("ok");
+
+                var jsonData = JsonConvert.DeserializeObject<Dictionary<string, string>>(data);
+
+                switch (jsonData["type"])
+                {
+                    case "confirmation":
+                        data = Settings.ConfiramtionKey;
+                        break;
+                    case "message_new":
+                        data = "ok";
+                        break;
+                }
+
+                await context.Response.WriteAsync(data);
                 var uri = $"https://api.vk.com/method/messages.send?user_id=84069595&message={data}&access_token={Settings.ApiKey}&v=5.74";
                 await GetAsync(uri);
             });
@@ -51,12 +65,12 @@ namespace VKBot
 
         public async Task<string> GetAsync(string uri)
         {
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
+            var request = (HttpWebRequest)WebRequest.Create(uri);
             request.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
 
-            using (HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync())
-            using (Stream stream = response.GetResponseStream())
-            using (StreamReader reader = new StreamReader(stream))
+            using (var response = (HttpWebResponse)await request.GetResponseAsync())
+            using (var stream = response.GetResponseStream())
+            using (var reader = new StreamReader(stream))
             {
                 return await reader.ReadToEndAsync();
             }
