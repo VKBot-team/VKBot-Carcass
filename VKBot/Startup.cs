@@ -26,11 +26,12 @@ namespace VKBot
             {
                 app.UseDeveloperExceptionPage();
             }
-
+            
             app.Map(Settings.HandlerPath, CallbackHandler);
 
             app.Run(async (context) =>
             {
+                File.WriteAllText(@"D:\Проекты\VKBOT_IIS\1.txt", "azz");
                 await context.Response.WriteAsync("Hello, VKBOT!");
             });
         }
@@ -39,28 +40,44 @@ namespace VKBot
         {
             app.Run(async context => 
             {
+                File.WriteAllText(@"D:\Проекты\VKBOT_IIS\1.txt", "azzzzzz");
                 string data;
+                var response = string.Empty;
                 using (var reader = new StreamReader(context.Request.Body))
                 {
                     data = await reader.ReadToEndAsync();
                 }
 
-                var jsonData = JsonConvert.DeserializeObject<Dictionary<string, string>>(data);
+                var jsonData = JsonConvert.DeserializeObject<Dictionary<string, object>>(data);
 
-                switch (jsonData["type"])
+                File.WriteAllText(@"D:\Проекты\VKBOT_IIS\1.txt", jsonData["type"].ToString());
+
+                switch (jsonData["type"].ToString())
                 {
                     case "confirmation":
-                        data = Settings.ConfiramtionKey;
+                        response = Settings.ConfiramtionKey;
                         break;
                     case "message_new":
-                        data = "ok";
+                        response = "ok";
                         break;
                 }
 
-                await context.Response.WriteAsync(data);
-                var uri = $"https://api.vk.com/method/messages.send?user_id=84069595&message={data}&access_token={Settings.ApiKey}&v=5.74";
-                await GetAsync(uri);
+                await context.Response.WriteAsync(response);
+
+                if (jsonData["type"].ToString() == "message_new")
+                {
+                    var msg = "Я тестовый бот, ничего тебе не скажу. Ну а что, ты думал что я аниме чтоли буду присылать?!";
+                    var uri = $"https://api.vk.com/method/messages.send?user_id={GetUserId(data)}&message={msg}&access_token={Settings.ApiKey}&v=5.74";
+                    await GetAsync(uri);
+                }
             });
+        }
+
+        private int GetUserId(string request)
+        {
+            var jsonData = JsonConvert.DeserializeObject<Dictionary<string, object>>(request);
+            var info = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonData["object"].ToString());
+            return int.Parse(info["user_id"].ToString());
         }
 
         public async Task<string> GetAsync(string uri)
