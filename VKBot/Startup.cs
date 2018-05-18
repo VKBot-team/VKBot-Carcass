@@ -11,6 +11,7 @@ using System.Runtime.Serialization;
 using System.IO;
 using System.Net;
 using Newtonsoft.Json;
+using VKBot.VKApi;
 
 namespace VKBot
 {
@@ -31,7 +32,6 @@ namespace VKBot
 
             app.Run(async (context) =>
             {
-                File.WriteAllText(@"D:\Проекты\VKBOT_IIS\1.txt", "azz");
                 await context.Response.WriteAsync("Hello, VKBOT!");
             });
         }
@@ -40,57 +40,33 @@ namespace VKBot
         {
             app.Run(async context => 
             {
-                File.WriteAllText(@"D:\Проекты\VKBOT_IIS\1.txt", "azzzzzz");
                 string data;
-                var response = string.Empty;
                 using (var reader = new StreamReader(context.Request.Body))
                 {
                     data = await reader.ReadToEndAsync();
                 }
 
-                var jsonData = JsonConvert.DeserializeObject<Dictionary<string, object>>(data);
-
-                File.WriteAllText(@"D:\Проекты\VKBOT_IIS\1.txt", jsonData["type"].ToString());
-
-                switch (jsonData["type"].ToString())
-                {
-                    case "confirmation":
-                        response = Settings.ConfiramtionKey;
-                        break;
-                    case "message_new":
-                        response = "ok";
-                        break;
-                }
-
-                await context.Response.WriteAsync(response);
-
-                if (jsonData["type"].ToString() == "message_new")
-                {
-                    var msg = "Я тестовый бот, ничего тебе не скажу. Ну а что, ты думал что я аниме чтоли буду присылать?!";
-                    var uri = $"https://api.vk.com/method/messages.send?user_id={GetUserId(data)}&message={msg}&access_token={Settings.ApiKey}&v=5.74";
-                    await GetAsync(uri);
-                }
+                await HandleNewMessage(context, data);
             });
         }
 
-        private int GetUserId(string request)
+        private async Task HandleNewMessage(HttpContext context, string data)
         {
-            var jsonData = JsonConvert.DeserializeObject<Dictionary<string, object>>(request);
-            var info = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonData["object"].ToString());
-            return int.Parse(info["user_id"].ToString());
-        }
+            var response = "ok";
+            var jsonData = JsonConvert.DeserializeObject<Message>(data);
+            if (jsonData.Type == "confirmation")
+                response = Settings.ConfiramtionKey;
 
-        public async Task<string> GetAsync(string uri)
-        {
-            var request = (HttpWebRequest)WebRequest.Create(uri);
-            request.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+            await context.Response.WriteAsync(response);
 
-            using (var response = (HttpWebResponse)await request.GetResponseAsync())
-            using (var stream = response.GetResponseStream())
-            using (var reader = new StreamReader(stream))
+            if (jsonData.Type != "message_new") return;
+
+            var msg = "Теперь я присылаю новое сообщение! ВАААУ, но ты все рано дурак, раз до сих пор мне пишешь :)";
+            await VkApi.ExecMethod(Method.MessageSend, new Dictionary<string, string>
             {
-                return await reader.ReadToEndAsync();
-            }
+                {"user_id", jsonData.Object.UserId.ToString()},
+                {"message", msg}
+            });
         }
     }
 }

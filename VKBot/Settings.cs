@@ -11,5 +11,6 @@ namespace VKBot
         public static string HandlerPath = "/handle/for_callback_vk_api";
         public static string ConfiramtionKey = "40aba202";
         public static string MethodUri = $"https://api.vk.com/method/messages.send?access_token={ApiKey}&v=5.74";
+        public static string VkApiVersion = "5.74";
     }
 }
