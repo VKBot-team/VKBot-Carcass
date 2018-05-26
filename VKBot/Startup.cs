@@ -1,17 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using System.Runtime.Serialization.Json;
-using System.Runtime.Serialization;
 using System.IO;
-using System.Net;
 using Newtonsoft.Json;
-using VKBot.VKApi;
 
 namespace VKBot
 {
@@ -56,17 +49,10 @@ namespace VKBot
             var jsonData = JsonConvert.DeserializeObject<Message>(data);
             if (jsonData.Type == "confirmation")
                 response = Settings.ConfiramtionKey;
-
             await context.Response.WriteAsync(response);
 
             if (jsonData.Type != "message_new") return;
-
-            var msg = "Теперь я присылаю новое сообщение! ВАААУ, но ты все рано дурак, раз до сих пор мне пишешь :)";
-            await VkApi.ExecMethod(Method.MessageSend, new Dictionary<string, string>
-            {
-                {"user_id", jsonData.Object.UserId.ToString()},
-                {"message", msg}
-            });
+            // Send message to BotAPI
         }
     }
 }
