@@ -32,7 +32,7 @@ namespace VKBot
 
             app.Run(async (context) =>
             {
-                await context.Response.WriteAsync("Hello, VKBOT!");
+                await context.Response.WriteAsync("Hello, VK Bot!");
             });
         }
 
