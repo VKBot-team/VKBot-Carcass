@@ -10,11 +10,17 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.5" />
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <PackageReference Include="NUnit" Version="3.10.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.10.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="KBot">
-      <HintPath>..\..\KBot.dll</HintPath>
+    <Reference Include="API">
+      <HintPath>..\..\API\API\bin\Release\netcoreapp2.0\API.dll</HintPath>
+    </Reference>
+    <Reference Include="VKApiCore">
+      <HintPath>..\..\VKApiCore\VKApiCore\bin\Release\netcoreapp2.0\VKApiCore.dll</HintPath>
     </Reference>
   </ItemGroup>
 

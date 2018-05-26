@@ -1,12 +1,14 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using System.IO;
-using KBot;
+using System.Linq;
+using System.Text.RegularExpressions;
+using API;
 using Newtonsoft.Json;
-using KBot.API;
 
 namespace VKBot
 {
@@ -43,25 +45,37 @@ namespace VKBot
                     data = await reader.ReadToEndAsync();
                 }
 
-                await HandleNewMessage(context, data);
+                var jsonData = JsonConvert.DeserializeObject<Message>(data);
+                await context.Response.WriteAsync(GetResponse(jsonData));
+
+                HandleNewMessage(jsonData);
             });
         }
 
-        private async Task HandleNewMessage(HttpContext context, string data)
+        private string GetResponse(Message jsonData)
         {
-            var response = "ok";
-            var jsonData = JsonConvert.DeserializeObject<Message>(data);
-            if (jsonData.Type == "confirmation")
-                response = Settings.ConfiramtionKey;
-            await context.Response.WriteAsync(response);
-            
-            if (jsonData.Type == "message_new")
-            {
-                var args = jsonData.Object.Body.Split(' ');
-                await Api.ExecuteCommand(new[] { "ok", jsonData.Object.UserId.ToString() });
-                await Api.ExecuteCommand(args);
-            }
+            return jsonData.Type == "confirmation" ? Settings.ConfiramtionKey : "ok";
+        }
 
+        private async void HandleNewMessage(Message jsonData)
+        {
+            if (jsonData.Type != "message_new") return;
+            try
+            {
+                await Api.ExecuteCommand(new[] {"ok", jsonData.Object.UserId.ToString()});
+                await Api.ExecuteCommand(GetArgs(jsonData).Append(jsonData.Object.UserId.ToString()).ToArray());
+            }
+            catch(ArgumentException)
+            {
+                await Api.ExecuteCommand(new[] {"error", jsonData.Object.UserId.ToString()});
+            }
+        }
+
+        private static string[] GetArgs(Message jsonData)
+        {
+            return Regex.Matches(jsonData.Object.Body, @"[\""].+?[\""]|[^ ]+")
+                .Select(m => m.Value.Replace("\"", ""))
+                .ToArray();
         }
     }
 }
