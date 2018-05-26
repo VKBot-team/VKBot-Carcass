@@ -12,4 +12,10 @@
     <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.5" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="KBot">
+      <HintPath>..\..\KBot.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>

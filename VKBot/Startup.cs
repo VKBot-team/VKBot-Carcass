@@ -4,12 +4,16 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using System.IO;
+using KBot;
 using Newtonsoft.Json;
+using KBot.API;
 
 namespace VKBot
 {
     public class Startup
     {
+        private static readonly IBotAPI Api = new BotAPI();
+
         public void ConfigureServices(IServiceCollection services)
         {
         }
@@ -50,9 +54,14 @@ namespace VKBot
             if (jsonData.Type == "confirmation")
                 response = Settings.ConfiramtionKey;
             await context.Response.WriteAsync(response);
+            
+            if (jsonData.Type == "message_new")
+            {
+                var args = jsonData.Object.Body.Split(' ');
+                await Api.ExecuteCommand(new[] { "ok", jsonData.Object.UserId.ToString() });
+                await Api.ExecuteCommand(args);
+            }
 
-            if (jsonData.Type != "message_new") return;
-            // Send message to BotAPI
         }
     }
 }
